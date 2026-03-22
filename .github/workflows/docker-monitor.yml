@@ -17,24 +17,22 @@ jobs:
       run: |
         docker build -t my-container .
 
-    - name: Start 30 containers
+    - name: Start 4 containers
       run: |
-        for i in {1..30}; do
+        for i in {1..4}; do
           NEW_NAME="container-$i"
-          PORT_590=$((5900 + i))
-          PORT_22=$((220 + i))
-          docker run -d --name $NEW_NAME -p $PORT_590:5901 -p $PORT_22:22 my-container
+          docker run -d --name $NEW_NAME -p 590$i:5901 -p 22$i:22 my-container
           echo "Iniciado $NEW_NAME"
         done
 
-    - name: Wait 2 hours
+    - name: Wait 6 minutes
       run: |
-        echo "Esperando 2 horas antes de detener los contenedores"
-        sleep 7200
+        echo "Esperando 6 minutos antes de detener los contenedores"
+        sleep 360
 
     - name: Stop containers
       run: |
-        for i in {1..30}; do
+        for i in {1..4}; do
           NEW_NAME="container-$i"
           docker stop $NEW_NAME || true
           docker rm $NEW_NAME || true

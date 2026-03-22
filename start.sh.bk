@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Set the USER environment variable. This is critical for vncserver.
+export USER=root
+
+# --- VNC Server Setup ---
+
+# 1. Create the directory for VNC configurations.
+mkdir -p /root/.vnc
+
+# 2. Create a custom xstartup file to launch XFCE inside a dbus session.
+# This is the key fix for the 'dbus-launch' error.
+cat > /root/.vnc/xstartup << EOF
+#!/bin/sh
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+dbus-run-session -- startxfce4
+EOF
+
+# 3. Make the xstartup script executable.
+chmod 755 /root/.vnc/xstartup
+
+# 4. Set the VNC password non-interactively.
+echo 'vncpass' | vncpasswd -f > /root/.vnc/passwd
+
+# 5. Set correct permissions for the password file.
+chmod 600 /root/.vnc/passwd
+
+# 6. Start the VNC server.
+# First, clean up any lingering VNC server instance.
+/usr/bin/vncserver -kill :1 > /dev/null 2>&1 || true
+# Now, start the fresh VNC server.
+/usr/bin/vncserver :1 -geometry 1280x800 -depth 24
+
+echo "VNC Server started on display :1 (Port 5901)"
+
+
+# --- Launch GUI Applications ---
+echo "Waiting for XFCE desktop to be ready..."
+sleep 5 # Give the desktop environment a moment to load.
+
+echo "Launching Firefox and SikuliX script on display :1..."
+export DISPLAY=:1
+
+# Disable Firefox sandbox and launch it maximized to a specific URL.
+export MOZ_DISABLE_CONTENT_SANDBOX=1
+firefox https://link-target.net/3995761/bgPZqtt3wH5e> /tmp/firefox.log 2>&1 &
+
+# Launch SikuliX script, in the background, and log its output.
+java -jar /usr/local/bin/sikulixide.jar -r /sikuvertice.py > /tmp/sikuli.log 2>&1 &
+
+
+# --- Core Services & Cloudflare Tunnels ---
+
+# Start OpenSSH server for terminal access.
+service ssh start
+
+echo "SSH service started."
+echo "Launching Cloudflare Tunnels..."
+
+# Launch the SSH tunnel in the background.
+cloudflared tunnel --url ssh://localhost:22 > /tmp/ssh_tunnel.log 2>&1 &
+
+sleep 8 # Wait for the tunnel to establish.
+
+# Display the SSH connection URL.
+echo "#####################################################################"
+echo "## Your SSH connection URL is:"
+cat /tmp/ssh_tunnel.log | grep -o 'https://[a-z-]*\.trycloudflare.com'
+echo "##"
+echo "## Use: ssh root@<URL_ABOVE_WITHOUT_HTTPS>"
+echo "## Password: yourpassword"
+echo "#####################################################################"
+
+# Launch the VNC tunnel in the foreground.
+# This is the primary process that keeps the container running.
+echo ""
+echo "Launching VNC tunnel. The URL will be displayed below:"
+exec cloudflared tunnel --url tcp://localhost:5901

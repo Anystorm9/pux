@@ -1,0 +1,87 @@
+import time
+
+similarity = 0.8
+
+# 🔹 Definir patrón click4
+click4_pattern = Pattern("7.png").similar(similarity)
+
+templates = [
+    {"name": "img1", "buscar": "1.png", "click": "2.png"},
+    {"name": "img2", "buscar": "3.png", "click": "4.png"},
+    {"name": "img3", "buscar": "5.png", "click": "6.png"},
+    {"name": "img5", "buscar": "8.png", "click": "8.png"},
+    {"name": "img6", "buscar": "9.png", "click": "10.png"}
+]
+
+while True:
+    encontrado = False
+    start_time_total = time.time()
+    timeout_total = 10  # 🔹 tiempo máximo de búsqueda
+
+    while time.time() - start_time_total < timeout_total and not encontrado:
+
+        for temp in templates:
+            pattern_buscar = Pattern(temp["buscar"]).similar(similarity)
+
+            if exists(pattern_buscar, 0.5):
+                pattern_click = Pattern(temp["click"]).similar(similarity)
+
+                # 🔹 Scroll si aplica (ahora img1 también entra en la lógica)
+                if temp["name"] in ["img1", "img2", "img3", "img5", "img6"]:
+                    start_time_scroll = time.time()
+                    timeout_scroll = 8
+
+                    while not exists(pattern_click, 0):
+                        
+                        # 🔥 Prioridad a img5 e img6
+                        if temp["name"] not in ["img5", "img6"]:
+                            if exists(Pattern("5.png").similar(similarity), 0):
+                                click(Pattern("6.png").similar(similarity))
+                                print("👉 Click en img5 durante scroll")
+                                wait(1)
+
+                            if exists(Pattern("6.png").similar(similarity), 0):
+                                click(Pattern("7.png").similar(similarity))
+                                print("👉 Click en img6 durante scroll")
+                                wait(1)
+
+                        type(Key.DOWN)
+                        wait(0.5)
+
+                        if time.time() - start_time_scroll > timeout_scroll:
+                            print("⏱️ Tiempo de scroll agotado para {}".format(temp["name"]))
+                            break
+
+                # 🔹 Click principal
+                if exists(pattern_click, 2):
+                    click(pattern_click)
+                    print("Se encontró {} y se hizo click en {}".format(temp["name"], temp["click"]))
+
+                    # 🔥 Lógica especial para img3
+                    if temp["name"] == "img3":
+                        wait(3)
+                        if exists(click4_pattern, 2):
+                            click(click4_pattern)
+                            print("👉 Click en click4 después de esperar")
+                        else:
+                            print("⚠️ click4 no apareció")
+                        wait(2)
+                    else:
+                        wait(2)
+
+                    encontrado = True
+                    break
+
+        wait(0.5)
+
+    # 🔹 Si no encontró nada
+    if not encontrado:
+        print("🌐 No se encontró ninguna imagen, abriendo nueva pestaña")
+        type("t", Key.CTRL)
+        wait(1)
+        paste("https://linkvertise.com/3995761/1JHweFuyUxMq?o=sharing")
+        wait(1)
+        type(Key.ENTER)
+        wait(3)
+
+    wait(1)

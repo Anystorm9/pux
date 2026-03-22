@@ -1,0 +1,3 @@
+sudo docker build -t sikuvertice .
+sudo docker run --name sikuvertice sikuvertice
+cloudflared access tcp --hostname weather-cancellation-gay-seat.trycloudflare.com --listener localhost:5901

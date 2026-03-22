@@ -1,0 +1,47 @@
+name: Single Container Workflow
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        docker build -t my-app .
+
+    - name: Start container
+      run: |
+        docker run -d -p 8080:8080 --name my-container my-app
+        echo "Container started successfully"
+
+    - name: Keep running for 3 minutes 30 seconds
+      run: |
+        echo "Running for 3 minutes and 30 seconds..."
+        sleep 210  # 210 segundos = 3:30
+        echo "Time completed..."
+        docker logs my-container || true
+
+    - name: Stop container
+      run: |
+        docker stop my-container || true
+        docker rm my-container || true
+        echo "Container stopped"
+
+    - name: Trigger next run
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Triggering next workflow run..."
+        gh workflow run "Single Container Workflow" || true

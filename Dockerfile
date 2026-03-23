@@ -1,5 +1,5 @@
 # Base Image: Use Debian Bullseye for a stable and common base.
-FROM debian:bullseye
+FROM debian:bookworm
 
 # Install necessary packages for XFCE, SSH, VNC, and tunneling.2
 # We use --no-install-recommends to keep the image slim.

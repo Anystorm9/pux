@@ -1,8 +1,10 @@
 import time
+import random
+from sikuli import *
 
 similarity = 0.8
 
-# 🔹 Definir patrón click4
+# 🔹 Patrón especial
 click4_pattern = Pattern("7.png").similar(similarity)
 
 templates = [
@@ -14,37 +16,85 @@ templates = [
     {"name": "img6", "buscar": "9.png", "click": "10.png"}
 ]
 
+# 🔹 Movimiento humano REAL (sin romper clicks)
+def move_mouse_human(match):
+    loc = match.getCenter()
+    mouse_location = Env.getMouseLocation()  # Obtener la ubicación actual del ratón
+    x1, y1 = mouse_location.getX(), mouse_location.getY()  # Extraer las coordenadas x e y
+    x2, y2 = loc.getX(), loc.getY()
+
+    steps = random.randint(18, 28)
+
+    for i in range(steps):
+        t = i / float(steps)
+
+        # Curva suave + pequeña desviación
+        offset_x = random.randint(-2, 2) * (1 - t)
+        offset_y = random.randint(-2, 2) * (1 - t)
+
+        x = int(x1 + (x2 - x1) * t + offset_x)
+        y = int(y1 + (y2 - y1) * t + offset_y)
+
+        Mouse.move(Location(x, y))  # Usar Mouse.move para mover el ratón a la nueva ubicación
+        wait(random.uniform(0.008, 0.02))
+
+# 🔹 micro-movimientos antes del click
+def micro_pause():
+    wait(random.uniform(0.2, 0.5))
+
+# 🔹 espera humana
+def wait_human(a=1, b=3):
+    wait(random.uniform(a, b))
+
+# 🔹 scroll humano (sin mover mouse lejos)
+def scroll_human():
+    type(Key.DOWN)
+    wait(random.uniform(0.3, 0.6))
+
+# 🔁 LOOP PRINCIPAL
 while True:
     encontrado = False
 
-    # 🔥 LÓGICA INICIAL (no bloqueante)
+    # 🔥 LÓGICA INICIAL (INTACTA)
     try:
         pattern_16 = Pattern("16.png").similar(similarity)
-        if exists(pattern_16, 2):
-            click(pattern_16)
+        match_16 = exists(pattern_16, 2)
+
+        if match_16:
+            move_mouse_human(match_16)
+            micro_pause()
+            click(match_16)
             print("✅ Click en 16.png")
-            wait(3)
+
+            wait_human(2, 4)
 
             pattern_17 = Pattern("17.png").similar(similarity)
-            if exists(pattern_17, 2):
-                click(pattern_17)
+            match_17 = exists(pattern_17, 2)
+
+            if match_17:
+                move_mouse_human(match_17)
+                micro_pause()
+                click(match_17)
                 print("✅ Click en 17.png")
             else:
                 print("⚠️ No apareció 17.png")
         else:
             print("⚠️ No apareció 16.png")
+
     except:
         print("⚠️ Error en lógica inicial, continuando...")
 
-    # 🔹 Lógica principal
+    # 🔹 LÓGICA PRINCIPAL
     start_time_total = time.time()
     timeout_total = 16
 
     while time.time() - start_time_total < timeout_total and not encontrado:
+
         for temp in templates:
             pattern_buscar = Pattern(temp["buscar"]).similar(similarity)
+            match_buscar = exists(pattern_buscar, 0.5)
 
-            if exists(pattern_buscar, 0.5):
+            if match_buscar:
                 pattern_click = Pattern(temp["click"]).similar(similarity)
 
                 # 🔹 Scroll
@@ -52,27 +102,39 @@ while True:
                     start_time_scroll = time.time()
                     timeout_scroll = 8
 
-                    while not exists(pattern_click, 0):
-                        type(Key.DOWN)
-                        wait(0.5)
+                    while True:
+                        match_click = exists(pattern_click, 0)
+                        if match_click:
+                            break
+
+                        scroll_human()
 
                         if time.time() - start_time_scroll > timeout_scroll:
                             print("⏱️ Tiempo de scroll agotado para {}".format(temp["name"]))
                             break
 
                 # 🔹 Click principal
-                if exists(pattern_click, 2):
+                match_click = exists(pattern_click, 2)
 
-                    # 🔥 CASO ESPECIAL: img0 (19 → esperar → 20)
+                if match_click:
+
+                    move_mouse_human(match_click)
+                    micro_pause()
+
+                    # 🔥 CASO ESPECIAL img0
                     if temp["name"] == "img0":
-                        click(pattern_click)
+                        click(match_click)
                         print("Se encontró img0 y se hizo click en 19.png")
 
-                        wait(3)
+                        wait_human(2.5, 4)
 
                         pattern_20 = Pattern("20.png").similar(similarity)
-                        if exists(pattern_20, 2):
-                            click(pattern_20)
+                        match_20 = exists(pattern_20, 2)
+
+                        if match_20:
+                            move_mouse_human(match_20)
+                            micro_pause()
+                            click(match_20)
                             print("👉 Click en 20.png después de esperar")
                         else:
                             print("⚠️ 20.png no apareció")
@@ -80,64 +142,82 @@ while True:
                         encontrado = True
                         break
 
-                    # 🔹 Lógica normal para el resto
-                    click(pattern_click)
+                    # 🔹 LÓGICA NORMAL
+                    click(match_click)
                     print("Se encontró {} y se hizo click en {}".format(temp["name"], temp["click"]))
 
-                    # 🔥 Lógica especial para img3
+                    # 🔥 CASO img3
                     if temp["name"] == "img3":
-                        wait(3)
-                        if exists(click4_pattern, 2):
-                            click(click4_pattern)
+                        wait_human(2.5, 4)
+
+                        match_c4 = exists(click4_pattern, 2)
+                        if match_c4:
+                            move_mouse_human(match_c4)
+                            micro_pause()
+                            click(match_c4)
                             print("👉 Click en click4 después de esperar")
                         else:
                             print("⚠️ click4 no apareció")
-                        wait(2)
+
+                        wait_human(1.5, 2.5)
                     else:
-                        wait(2)
+                        wait_human(1.5, 2.5)
 
                     encontrado = True
                     break
 
-            wait(0.5)
+            wait(random.uniform(0.4, 0.6))
 
-    # 🔁 REINTENTO ANTES DE ABRIR URL
+    # 🔁 REINTENTO
     if not encontrado:
-        print("🔁 Reintentando esscaneo antes de abrir URL...")
+        print("🔁 Reintentando escaneo antes de abrir URL...")
 
         reintento_encontrado = False
         start_retry = time.time()
         timeout_retry = 6
 
         while time.time() - start_retry < timeout_retry and not reintento_encontrado:
+
             for temp in templates:
                 pattern_buscar = Pattern(temp["buscar"]).similar(similarity)
+                match_buscar = exists(pattern_buscar, 0.5)
 
-                if exists(pattern_buscar, 0.5):
+                if match_buscar:
                     pattern_click = Pattern(temp["click"]).similar(similarity)
 
                     start_time_scroll = time.time()
                     timeout_scroll = 5
 
-                    while not exists(pattern_click, 0):
-                        type(Key.DOWN)
-                        wait(0.4)
+                    while True:
+                        match_click = exists(pattern_click, 0)
+                        if match_click:
+                            break
+
+                        scroll_human()
 
                         if time.time() - start_time_scroll > timeout_scroll:
                             break
 
-                    if exists(pattern_click, 1):
+                    match_click = exists(pattern_click, 1)
 
-                        # 🔥 Reintento especial para img0
+                    if match_click:
+                        move_mouse_human(match_click)
+                        micro_pause()
+
+                        # 🔥 Reintento img0
                         if temp["name"] == "img0":
-                            click(pattern_click)
+                            click(match_click)
                             print("✅ Reintento exitoso con img0")
 
-                            wait(3)
+                            wait_human(2.5, 4)
 
                             pattern_20 = Pattern("20.png").similar(similarity)
-                            if exists(pattern_20, 2):
-                                click(pattern_20)
+                            match_20 = exists(pattern_20, 2)
+
+                            if match_20:
+                                move_mouse_human(match_20)
+                                micro_pause()
+                                click(match_20)
                                 print("👉 Click en 20.png después del reintento")
                             else:
                                 print("⚠️ 20.png no apareció en reintento")
@@ -146,23 +226,26 @@ while True:
                             encontrado = True
                             break
 
-                        click(pattern_click)
+                        click(match_click)
                         print("✅ Reintento exitoso con {}".format(temp["name"]))
 
                         reintento_encontrado = True
                         encontrado = True
                         break
 
-                wait(0.4)
+                wait(random.uniform(0.3, 0.5))
 
-    # 🌐 Abrir URL solo si TODO falló
+    # 🌐 FALLBACK URL
     if not encontrado:
         print("🌐 No se encontró ninguna imagen, abriendo nueva pestaña")
-        type("t", Key.CTRL)
-        wait(1)
-        paste("https://link-target.net/3995761/bgPZqtt3wH5e")
-        wait(1)
-        type(Key.ENTER)
-        wait(3)
 
-    wait(1)
+        type("t", Key.CTRL)
+        wait_human(0.8, 1.2)
+
+        paste("https://link-target.net/3995761/bgPZqtt3wH5e")
+        wait_human(0.8, 1.2)
+
+        type(Key.ENTER)
+        wait_human(2.5, 3.5)
+
+    wait_human(0.8, 1.5)

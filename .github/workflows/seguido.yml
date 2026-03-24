@@ -26,10 +26,10 @@ jobs:
         docker run -d -p 8080:8080 --name my-container my-app
         echo "Container started successfully"
 
-    - name: Keep running for 3 minutes 30 seconds
+    - name: Keep running for 4 minutes 30 seconds
       run: |
-        echo "Running for 3 minutes and 30 seconds..."
-        sleep 210  # 210 segundos = 3:30
+        echo "Running for 4 minutes and 30 seconds..."
+        sleep 270  # 270 segundos = 4:30
         echo "Time completed..."
         docker logs my-container || true
 
